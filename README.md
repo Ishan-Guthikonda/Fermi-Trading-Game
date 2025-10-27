@@ -29,47 +29,90 @@ price-time priority
 
 ## Technology Stack
 
-- **Backend**: Node.js, Express, Firebase
-- **Frontend**: React, TypeScript
-- **Real-time Communication**: Live data through Firebase
+- **Backend**: Firebase Realtime Database, Firebase Authentication
+- **Frontend**: React, TypeScript (contains all game logic)
+- **Server**: Minimal Express server (static file serving only)
+- **Real-time Communication**: Firebase Realtime Database with live listeners
 - **Styling**: CSS3 with modern design
+
+## Architecture
+
+This app uses a **serverless architecture** where all game logic runs in the client:
+
+1. **Firebase Realtime Database**: Central source of truth for multiplayer state
+   - Game rooms, players, order books, and game state
+   - Real-time synchronization across all connected clients
+   - Host writes updates, non-hosts listen for changes
+
+2. **Client-side Game Logic** (`App.tsx`):
+   - Order matching algorithm (price-time priority)
+   - Position and cash calculations
+   - Round scoring and tournament management
+   - Timer synchronization (host broadcasts, others receive)
+
+3. **Express Server**: Minimal role
+   - Serves production build files
+   - Health check endpoint for deployment platforms
+   - No game logic or WebSocket handling
+
+4. **Deployment Options**:
+   - Firebase Hosting (recommended)
+   - Vercel (frontend + serverless functions)
+   - Any static hosting + Firebase backend
 
 ## Installation & Setup
 
 ### Prerequisites
 - Node.js (v14 or higher)
 - npm
+- Firebase account (for production deployment)
 
-### Backend Setup
+### Firebase Setup (Optional for Development)
+The app is configured to work with Firebase but can run locally for single-device testing:
+
+1. **For Production/Multi-device:**
+   - Create a Firebase project at [Firebase Console](https://console.firebase.google.com/)
+   - Enable Firebase Realtime Database
+   - Enable Firebase Authentication (Anonymous sign-in)
+   - Update `client/src/firebase.ts` with your Firebase config
+   - Set up Firebase database rules
+
+2. **For Local Development (Single Device):**
+   - The app will work locally with fallback to localStorage
+   - Firebase connection attempts are non-blocking
+
+### Installation
+
 ```bash
-# Install dependencies
+# Install root dependencies
 npm install
 
-# Start the server
-npm start
-```
-
-The server will run on `http://localhost:5000`
-
-### Frontend Setup
-```bash
-# Navigate to client directory
+# Install client dependencies
 cd client
-
-# Install dependencies
 npm install
-
-# Start the development server
-npm start
+cd ..
 ```
 
+### Running the App
+
+**Development Mode (Frontend Only):**
+```bash
+cd client
+npm start
+```
 The client will run on `http://localhost:3000`
 
-### Development Mode
-To run both backend and frontend simultaneously:
+**Production Mode (Frontend + Backend):**
 ```bash
-npm run dev
+# Build the client
+cd client
+npm run build
+cd ..
+
+# Start the Express server
+npm start
 ```
+The server will run on `http://localhost:3001` and serve the built React app
 
 ## How to Play
 
@@ -113,41 +156,84 @@ npm run dev
 - Ensures order integrity and proper matching
 - Queue-based system processes orders sequentially
 
-## API Endpoints
+## Firebase Database Structure
 
-### Socket Events
+The app uses Firebase Realtime Database with the following structure:
 
-**Client → Server:**
-- `createRoom`: Create new game room
-- `joinRoom`: Join existing room
-- `startGame`: Start the game (host only)
-- `placeOrder`: Place bid/ask order
-- `cancelOrder`: Cancel existing order
+```
+games/
+└── {roomCode}/
+    ├── roomCode: string
+    ├── gameState: 'waiting' | 'active' | 'finished' | 'tournament_finished'
+    ├── hostId: string
+    ├── currentRound: number
+    ├── totalRounds: number
+    ├── timeRemaining: number (milliseconds)
+    ├── currentQuestion: { question: string }
+    ├── realAssetValue: number (revealed at round end)
+    ├── marketPrice: number (calculated at round end)
+    ├── players/
+    │   └── {userId}/
+    │       ├── id: string
+    │       ├── username: string
+    │       ├── cash: number
+    │       ├── position: number
+    │       ├── isHost: boolean
+    │       ├── totalPoints: number
+    │       └── currentRoundPoints: number
+    ├── orderBook/
+    │   ├── bids/
+    │   │   └── {orderId}/
+    │   │       ├── price: number
+    │   │       ├── quantity: number
+    │   │       ├── userId: string
+    │   │       ├── timestamp: number
+    │   │       └── orderId: string
+    │   └── asks/
+    │       └── {orderId}/
+    │           ├── price: number
+    │           ├── quantity: number
+    │           ├── userId: string
+    │           ├── timestamp: number
+    │           └── orderId: string
+    └── roundResults: Array<{round: number, rankings: Array}>
+```
 
-**Server → Client:**
-- `roomCreated`: Room successfully created
-- `roomJoined`: Successfully joined room
-- `gameState`: Current game state update
-- `gameStarted`: Game has started
-- `orderBookUpdate`: Order book changes
-- `tradeExecuted`: Trade execution notification
-- `gameEnded`: Game finished with results
+### Express API Endpoints
+
+- `GET /api/health` - Health check endpoint (returns `{ status: 'ok', timestamp: ISO string }`)
+- `GET *` - Serves React build files in production
 
 ## File Structure
 
 ```
 fermi-market-game/
 ├── server/
-│   └── index.js          # Main server file
+│   └── index.js              # Express server (static file serving)
 ├── client/
 │   ├── src/
-│   │   ├── App.tsx       # Main React component
-│   │   ├── App.css       # Styling
-│   │   └── index.tsx     # React entry point
-│   └── package.json      # Client dependencies
-├── package.json          # Server dependencies
-└── README.md            # This file
+│   │   ├── App.tsx           # Main React component (all game logic)
+│   │   ├── App.css           # Styling
+│   │   ├── firebase.ts       # Firebase configuration & initialization
+│   │   ├── index.tsx         # React entry point
+│   │   └── react-app-env.d.ts
+│   ├── build/                # Production build files
+│   ├── public/               # Static assets
+│   ├── package.json          # Client dependencies
+│   └── tsconfig.json         # TypeScript configuration
+├── firebase.json             # Firebase hosting configuration
+├── .firebaserc               # Firebase project settings
+├── package.json              # Root dependencies
+├── vercel.json               # Vercel deployment config
+└── README.md                 # This file
 ```
+
+### Key Files
+
+- **`client/src/App.tsx`**: Contains all game logic including order matching, room management, and state updates
+- **`client/src/firebase.ts`**: Firebase SDK initialization and configuration
+- **`server/index.js`**: Minimal Express server for production static file serving
+- **`firebase.json`**: Firebase hosting configuration and database rules reference
 
 ## Contributing
 
