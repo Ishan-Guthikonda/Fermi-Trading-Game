@@ -34,7 +34,6 @@ price-time priority
 
 - **Backend**: Firebase Realtime Database, Firebase Authentication
 - **Frontend**: React, TypeScript (contains all game logic)
-- **Server**: Minimal Express server (static file serving only)
 - **Real-time Communication**: Firebase Realtime Database with live listeners
 - **Styling**: CSS3 with modern design
 
@@ -53,15 +52,8 @@ This app uses a **serverless architecture** where all game logic runs in the cli
    - Round scoring and tournament management
    - Timer synchronization (host broadcasts, others receive)
 
-3. **Express Server**: Minimal role
-   - Serves production build files
-   - Health check endpoint for deployment platforms
-   - No game logic or WebSocket handling
-
-4. **Deployment Options**:
-   - Firebase Hosting (recommended)
+3. **Deployment**:
    - Vercel (frontend + serverless functions)
-   - Any static hosting + Firebase backend
 
 ## Installation & Setup
 
