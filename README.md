@@ -7,6 +7,9 @@ be. At the end of each round, the number of contracts a player is long or
 short times the true value of the contract is added to the player's 
 bankroll.
 
+# Link
+https://fermi-market-game.vercel.app/
+
 ## Features
 
 - **Real-time Trading**: Live order book with bid/ask matching using 
